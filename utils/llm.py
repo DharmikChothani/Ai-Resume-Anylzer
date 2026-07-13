@@ -1,18 +1,27 @@
 import streamlit as st
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_huggingface import ChatHuggingFace, HuggingFaceEndpoint
 
 @st.cache_resource
-def get_gemini_llm():
-    # Retrieve the API key from Streamlit secrets
-    api_key = st.secrets.get("GOOGLE_API_KEY")
+def get_huggingface_llm():
+    # Retrieve the token from Streamlit secrets
+    hf_token = st.secrets.get("HUGGINGFACEHUB_API_TOKEN")
     
-    if not api_key:
-        st.error("Google API Key not found in secrets.toml.")
+    if not hf_token:
+        st.error("Hugging Face API Token not found in secrets.toml.")
         st.stop()
 
-    # Initialize Gemini
-    return ChatGoogleGenerativeAI(
-        model="gemini-3.5-flash", 
-        google_api_key=api_key,
-        temperature=0.3
+    # Initialize the Endpoint (using a popular open-source model)
+    # You can change 'repo_id' to any supported text-generation model
+    llm = HuggingFaceEndpoint(
+        repo_id="meta-llama/Llama-3.1-8B-Instruct", 
+        huggingfacehub_api_token=hf_token,
+        temperature=0.3,
+        max_new_tokens=512
     )
+    
+    # Wrap it in ChatHuggingFace for Chat-style interaction
+    return ChatHuggingFace(llm=llm)
+
+# Usage remains similar to your previous code
+llm = get_huggingface_llm()
+# response = llm.invoke("Your prompt here")

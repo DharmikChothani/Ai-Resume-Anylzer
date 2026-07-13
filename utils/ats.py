@@ -1,6 +1,9 @@
 from langchain_core.prompts import ChatPromptTemplate
 from pydantic import BaseModel, Field
 from typing import List
+from langchain_core.output_parsers import PydanticOutputParser
+from langchain_core.prompts import PromptTemplate
+
 
 # 1. Define the exact structure you want
 class ResumeAnalysis(BaseModel):
@@ -13,19 +16,23 @@ class ResumeAnalysis(BaseModel):
     recommended_roles: List[str] = Field(description="List of recommended job roles")
     missing_skills: List[str] = Field(description="List of missing key skills")
 
+
 def analyze_resume(chat_model, resume_text):
-    # 2. Bind the structured output to the model
-    structured_llm = chat_model.with_structured_output(ResumeAnalysis)
+    parser = PydanticOutputParser(pydantic_object=ResumeAnalysis)
     
-    prompt = ChatPromptTemplate.from_messages([
-        ("system", "You are an expert ATS resume analyzer. Extract the data into the requested JSON schema."),
-        ("user", "Analyze the following resume:\n\n{resume}")
-    ])
+    prompt = PromptTemplate(
+        template="""
+        You are an expert ATS (Applicant Tracking System) recruiter.
+        Analyze the following resume and return the data in strictly valid JSON format.
+        
+        {format_instructions}
+        
+        Resume Content:
+        {resume_text}
+        """,
+        input_variables=["resume_text"],
+        partial_variables={"format_instructions": parser.get_format_instructions()},
+    )
     
-    # 3. Create the chain
-    chain = prompt | structured_llm
-    
-    # 4. Invoke
-    # Result will now be a Pydantic object, we convert to dict to match your app.py
-    result = chain.invoke({"resume": resume_text})
-    return result.model_dump()
+    chain = prompt | chat_model | parser
+    return chain.invoke({"resume_text": resume_text})

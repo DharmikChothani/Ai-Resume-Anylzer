@@ -4,7 +4,7 @@ from utils.parser import extract_text
 from utils.ats import analyze_resume
 from utils.jd_matcher import compare_resume
 from utils.dashboard import ats_gauge, job_gauge, skill_chart
-from utils.llm import get_gemini_llm
+from utils.llm import get_huggingface_llm
 
 # --- PAGE CONFIGURATION ---
 st.set_page_config(
@@ -50,7 +50,7 @@ if resume:
         st.stop()
     
     # Initialize the Model
-    chat_model = get_gemini_llm()
+    chat_model = get_huggingface_llm()
 
     # --- CORE ANALYSIS ---
     with st.spinner("Analyzing..."):
@@ -65,18 +65,23 @@ if resume:
 
     # --- SUMMARY METRICS ---
     col1, col2, col3 = st.columns(3) 
-    ats_score = result.get("ats_score", 0)
+    # Convert the Pydantic object to a dictionary
+    result_dict = result.model_dump()
+
+# Now .get() will work perfectly
+    ats_score = result_dict.get("ats_score", 0)
     match_score = jd_result.get("match_percentage", 0) if jd_result else 0
     
     col1.metric("ATS Score", f"{ats_score}/100")
     col2.metric("Job Match", f"{match_score}%" if jd_result else "N/A")
-    col3.metric("Resume Level", result.get("resume_level", "Unknown"))
-    
+    res_dict = result.model_dump() 
+    col3.metric("Resume Level", res_dict.get("resume_level", "Unknown"))
+    col1.metric("Match Score", res_dict.get("match_percentage", 0))
     st.divider()
 
     # --- TABS ---
     tab1, tab2, tab3 = st.tabs(["📊 Dashboard", "🔍 Analysis", "📈 Charts"])
-
+    res = result.model_dump()
     with tab1:
         gauge_col1, gauge_col2 = st.columns(2)
         with gauge_col1:
@@ -84,22 +89,23 @@ if resume:
         with gauge_col2:
             if jd_result:
                 st.plotly_chart(job_gauge(match_score), use_container_width=True)
-        st.write(result.get("summary", "No summary provided."))
-
+        st.write(res.get("summary", "No summary provided."))
+    res = result.model_dump()
     with tab2:
         with st.expander("💪 Strengths", expanded=True):
-            for item in result.get("strengths", []): st.success(item)
+            for item in res.get("strengths", []): st.success(item)
         with st.expander("⚠️ Weaknesses"):
-            for item in result.get("weaknesses", []): st.error(item)
+            for item in res.get("weaknesses", []): st.error(item)
         with st.expander("💡 Suggestions"):
-            for tip in result.get("suggestions", []): st.info(tip)
+            for tip in res.get("suggestions", []): st.info(tip)
         
         st.subheader("🎯 Recommended Roles")
-        roles = result.get("recommended_roles", [])
+        roles = res.get("recommended_roles", [])
         st.write(roles if roles else "No specific roles recommended.")
 
     with tab3:
-        missing_skills = result.get("missing_skills", [])
+        res = result.model_dump()
+        missing_skills = res.get("missing_skills", [])
         if missing_skills:
             st.plotly_chart(skill_chart(missing_skills), use_container_width=True)
             for skill in missing_skills: st.warning(skill)
