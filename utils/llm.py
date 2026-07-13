@@ -1,25 +1,18 @@
-import os
 import streamlit as st
-from dotenv import load_dotenv
-from langchain_huggingface import ChatHuggingFace
-from langchain_huggingface import HuggingFaceEndpoint
-
-load_dotenv()
+from langchain_google_genai import ChatGoogleGenerativeAI
 
 @st.cache_resource
-def get_llm():
-    """Initializes and returns the Qwen3-8B model."""
+def get_gemini_llm():
+    # Retrieve the API key from Streamlit secrets
+    api_key = st.secrets.get("GOOGLE_API_KEY")
     
-    # Initialize the endpoint
-    llm = HuggingFaceEndpoint(
-        repo_id="Qwen/Qwen3-8B",
-        task="text-generation",
-        max_new_tokens=1024,
-        temperature=0.2, # Low temp for factual, analytical responses
-        
+    if not api_key:
+        st.error("Google API Key not found in secrets.toml.")
+        st.stop()
+
+    # Initialize Gemini
+    return ChatGoogleGenerativeAI(
+        model="gemini-3.5-flash", 
+        google_api_key=api_key,
+        temperature=0.3
     )
-    
-    # Wrap it in the Chat interface
-    chat = ChatHuggingFace(llm=llm)
-    
-    return chat

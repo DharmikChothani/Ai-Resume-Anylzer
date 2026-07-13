@@ -13,3 +13,4 @@ langchain
 transformers
 accelerate
 reportlab
+langchain-google-genai
