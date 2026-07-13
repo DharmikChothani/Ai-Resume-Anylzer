@@ -1,4 +1,6 @@
 AI Resume Analyzer
+
+
 The AI Resume Analyzer is an intelligent career tool designed to help job seekers optimize their resumes for Applicant Tracking Systems (ATS). By leveraging the power of Google's Gemini AI, the application provides instant feedback, highlights missing skills, and compares your profile against specific job descriptions to maximize your hiring potential.
 
 🚀 Features
