@@ -14,3 +14,4 @@ transformers
 accelerate
 reportlab
 langchain-google-genai
+ langchain_groq 
